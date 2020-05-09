@@ -144,6 +144,7 @@ exports.fetchDetails = functions.https.onCall(async (data, context) => {
   let query = MatchedRides.where("DriverId", "==", uid);
   let isDriver = true;
   let matchedRidesdoc;
+  const result = {};
   try {
     const snapshots = await query.get();
     //console.log("The length of the first query ", snapshots.size);
@@ -156,9 +157,8 @@ exports.fetchDetails = functions.https.onCall(async (data, context) => {
       //console.log("The length of the second query ", p.size);
       if (p.empty) {
         console.log("No files received when a file was expecected");
-        throw new functions.https.HttpsError(
-          "NO files received when one was expected"
-        );
+        result.isValid = false;
+        return JSON.stringify(result);
       } else if (p.size > 1) {
         console.log("Multiple files received when only one was expected");
         throw new functions.https.HttpsError(
@@ -195,7 +195,6 @@ exports.fetchDetails = functions.https.onCall(async (data, context) => {
     const p = await db.doc(`AllRides/${uid}/Rides/${matchedRidesdoc.id}`).get();
     promises.push(p);
     const documents = await Promise.all(promises);
-    const result = {};
     //console.log("The size of documents is " + documents.length);
     result.date = documents[documents.length - 1].get("date");
     result.time = documents[documents.length - 1].get("StartTime");
@@ -216,6 +215,7 @@ exports.fetchDetails = functions.https.onCall(async (data, context) => {
     result.passengers = passengers;
     result.isDriver = isDriver;
     result.rideId = matchedRidesdoc.docs[0].id;
+    result.isValid = true;
     const ans = JSON.stringify(result);
     console.log(ans);
     return JSON.stringify(result);
